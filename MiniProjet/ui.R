@@ -73,7 +73,7 @@ shinyUI(navbarPage(title = "My title",
                   
                   column(9, wellPanel(
                     tags$h4(HTML("Filtrer les données")),
-                    textInput("filterrow", label = 'Écrire un test conditionnel (ex. : BUREAU == "75116_1626" ou TXABS > 12)', width = "50%"),
+                    textInput("filterrow", label = 'Écrire un test conditionnel (ex. : day == "fri" ou temp > 60)', width = "50%"),
                     fluidRow(column(3,
                                     actionButton("addfilter", label = "Appliquer le filtre")),
                              column(3,
