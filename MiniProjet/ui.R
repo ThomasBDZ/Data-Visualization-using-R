@@ -5,16 +5,8 @@ library(ggplot2)
 
 shinyUI(navbarPage(title = "My title",
              tabPanel("Guide",
-                      sidebarLayout(
-                        sidebarPanel(
-                          radioButtons("plotType", "Plot type",
-                                       c("Scatter"="p", "Line"="l")
-                          )
-                        ),
-                        mainPanel(
-                          plotOutput("plot")
-                        )
-                      )
+                      fluidRow(
+                        column(10, includeMarkdown("Guide.md")))
              ),
              tabPanel("Données",
                 fluidRow(
