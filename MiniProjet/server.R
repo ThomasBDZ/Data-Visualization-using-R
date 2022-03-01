@@ -12,8 +12,6 @@ library(shiny)
 # Define server logic required to draw a histogram
 shinyServer(
   
-  
-  
   function(input, output, session) {
     
     df_fire <- read.csv("data/forestfires.csv")
@@ -44,11 +42,11 @@ shinyServer(
     output$downloaddata <- downloadHandler(
       filename = "data.csv",
       content = function(file) {
-        if (input$csvtype == "anglo"){
+        if (input$csvtype == "anglo")
+          {
           write.csv(x = baseData$df, file = file, row.names = FALSE)
         } else {
-          write.csv2(x = baseData$df, file = file, row.names = FALSE)
-        }
+          write.csv2(x = baseData$df, file = file, row.names = FALSE)}
       })
     
     
@@ -186,9 +184,295 @@ shinyServer(
         dev.off()
       })
     
-    output$summary <- renderPrint({
-      summary(cars)
+    # BIVARIE : QUALI-QUALI ----
+    
+    # Print mosaic plot
+    output$mosaic <- renderPlot({
+      req(input$qualiindep, input$qualidep)
+      if((length(unique(baseData$df[, input$qualidep])) - 1) * (length(unique(baseData$df[, input$qualiindep])) - 1) > 150){
+        stop("La ou les variables sélectionnées ne sont probablement pas qualitatives (ddl > 150)")
+      } else {
+        Mosaicplot(df = baseData$df, varx = input$qualiindep, vary = input$qualidep)
+      }
     })
+    
+    # contingency table
+    output$contingtab <- renderTable({
+      req(input$qualiindep, input$qualidep)
+      chiResults <- chisq.test(baseData$df[, input$qualidep], baseData$df[, input$qualiindep])
+      if(input$contcont == "obsfreq"){
+        return(chiResults$observed)
+      }
+      else if(input$contcont == "rowpct"){
+        return(100 * prop.table(table(baseData$df[, input$qualidep], baseData$df[, input$qualiindep]), margin = 1))
+      }
+      else if(input$contcont == "expfreq"){
+        return(round(chiResults$expected, digits = 0))
+      }
+      else if(input$contcont == "rawresid"){
+        return(chiResults$observed - chiResults$expected)
+      }
+      else if(input$contcont == "stdresid"){
+        return(chiResults$residuals)
+      }
+    })
+    
+    # contingency text
+    output$contingtext <- renderText({
+      req(input$qualiindep, input$qualidep)
+      chiResults <- chisq.test(baseData$df[, input$qualidep], baseData$df[, input$qualiindep])
+      textResult <- paste("Chi2 = ", round(chiResults$statistic, 2), "<br/>",
+                          "Phi = ", round(sqrt(chiResults$statistic / nrow(baseData$df)), 2), "<br/>",
+                          "V de Cramer = ", round(sqrt(chiResults$statistic / (nrow(baseData$df) * min(dim(chiResults$observed)))), 2), 
+                          sep = "")
+      return(textResult)
+    })
+    
+    # download plot
+    output$downloadmosaicplot <- downloadHandler(
+      filename = "mosaicplot.svg",
+      content = function(file) {
+        svg(file, width = input$widthmosaic / 2.54, height = input$heightmosaic / 2.54, pointsize = 8)
+        req(input$qualiindep, input$qualidep)
+        print(Mosaicplot(df = baseData$df, varx = input$qualiindep, vary = input$qualidep))
+        dev.off()
+      })
+    
+    # BIVARIE : QUANTI-QUANTI ----
+    
+    # print scatter plot
+    output$scatterplot <- renderPlot({
+      req(input$quantiindep, input$quantidep)
+      ScatterPlot(df = baseData$df, varx = input$quantiindep, vary = input$quantidep)
+    })
+    
+    # compute linear regression
+    regMod <- reactive({
+      req(input$quantiindep, input$quantidep)
+      ComputeRegression(df = baseData$df, vardep = input$quantidep, varindep = input$quantiindep)
+    })
+    
+    # print coefficients
+    output$coefreg <- renderTable(include.rownames = FALSE, expr = {
+      req(input$quantiindep, input$quantidep)
+      regMod()$TABCOEF
+    })
+    
+    # download plot
+    output$downloadreg1 <- downloadHandler(
+      filename = "regressionplot.svg",
+      content = function(file) {
+        svg(file, width = input$widthreg1 / 2.54, height = input$heightreg1 / 2.54, pointsize = 8)
+        req(input$quantiindep, input$quantidep)
+        print(ScatterPlot(df = baseData$df, varx = input$quantiindep, vary = input$quantidep))
+        dev.off()
+      })
+    
+    
+    # BIVARIE : QUALI-QUANTI ----
+    
+    # print boxplot
+    output$boxes <- renderPlot({
+      req(input$quanliindep, input$quanlidep)
+      Boxplot(df = baseData$df, varx = input$quanliindep, vary = input$quanlidep, jit = input$bpjitter)
+    })
+    
+    # print aovplot
+    output$aovplot <- renderPlot({
+      req(input$quanliindep, input$quanlidep)
+      AnovaPlot(df = baseData$df, varx = input$quanliindep, vary = input$quanlidep)
+    })
+    
+    # compute linear regression
+    aovMod <- reactive({
+      req(input$quanliindep, input$quanlidep)
+      ComputeRegression(df = baseData$df, vardep = input$quanlidep, varindep = input$quanliindep)
+    })
+    
+    # print coefficients
+    output$coefanova <- renderTable(include.rownames = FALSE, expr = {
+      req(input$quanliindep, input$quanlidep)
+      rbind(aovMod()$TABVAR, aovMod()$TABCOEF)
+    })
+    
+    # print mean and variance
+    output$tabanova <- renderTable(include.rownames = FALSE, expr = {
+      req(input$quanliindep, input$quanlidep)
+      AnovaTab(df = baseData$df, varx = input$quanliindep, vary = input$quanlidep)
+    })
+    
+    # download plot
+    output$downloadanova <- downloadHandler(
+      filename = "anovaplot.svg",
+      content = function(file) {
+        svg(file, width = input$widthanova1 / 2.54, height = input$heightanova1 / 2.54, pointsize = 8)
+        req(input$quanliindep, input$quanlidep)
+        print(grid.arrange(Boxplot(df = baseData$df, varx = input$quanliindep, vary = input$quanlidep, jit = input$bpjitter),
+                           AnovaPlot(df = baseData$df, varx = input$quanliindep, vary = input$quanlidep),
+                           nrow = 2))
+        dev.off()
+      })
+    
+    
+    
+    
+    # MULTIVARIE : REGRESSION ----
+    
+    # Compute linear regression
+    
+    regmultMod <- reactive({
+      if (input$regmultdep != "" & !is.null(input$regmultindep)){
+        ComputeRegressionMult(df = baseData$df, vardep = input$regmultdep, varindep = input$regmultindep)
+      } else {
+        return()
+      }
+    })
+    
+    # Print matrix
+    output$matcor <- renderTable(include.rownames = TRUE, expr = {
+      if (input$regmultdep != "" & !is.null(input$regmultindep)){
+        regmultMod()$MATCOR
+      } else {
+        return()
+      }
+    })
+    
+    # Print coefficients
+    
+    output$coefregmult <- renderTable(include.rownames = FALSE, expr = {
+      if (input$regmultdep != "" & !is.null(input$regmultindep)){
+        regmultMod()$TABCOEF
+      } else {
+        return()
+      }
+    })
+    
+    
+    # MULTIVARIE : ANALYSE FACTORIELLE ----
+    
+    # Compute factorial analysis
+    
+    
+    principalComp <- eventReactive(input$buttonpca, {
+      if(colnames(baseData$df)[1] == "BUREAU"){
+        ComputePrincipalComp(df = baseData$df, varquanti = input$factovar, ident = "BUREAU")
+      } else {
+        if(input$idtab == ""){
+          stop("Sélectionner une variable identifiant (onglet Données)")
+        } else {
+          ComputePrincipalComp(df = baseData$df, varquanti = input$factovar, ident = input$idtab)
+        }
+      }
+    })
+    
+    
+    
+    # Correlation matrix
+    
+    output$facmatcor <- renderTable({
+      req(principalComp)
+      CorCompMat(dudiobj = principalComp(), xaxis = input$xaxis, yaxis = input$yaxis)
+    })
+    
+    
+    # Plot components
+    
+    output$compinert <- renderPlot({
+      req(input$factovar)
+      DecompInertia(dudiobj = principalComp())
+    })
+    
+    # Plot individuals
+    
+    output$indivpca <- renderPlot({
+      req(input$factovar)
+      PlotIndiv(dudiobj = principalComp(), xaxis = as.integer(input$xaxis), yaxis = as.integer(input$yaxis), printlabel = input$labelindiv)
+    })
+    
+    # Plot circle of correlations
+    
+    output$corcircle <- renderPlot({
+      req(input$factovar)
+      CorCircle(dudiobj = principalComp(), xaxis = as.integer(input$xaxis), yaxis = as.integer(input$yaxis))
+    })
+    
+    # Table of contributions (variables and observations)
+    
+    output$contribvar <- renderTable(digits = 0, expr = {
+      if (!is.null(input$factovar)){
+        ContribVarIndiv(dudiobj = principalComp())$CTRVAR
+      } else {
+        return()
+      }
+    })
+    
+    output$contribind <- renderDataTable(options = list(pageLength = 10), expr = {
+      if (!is.null(input$factovar)){
+        ContribVarIndiv(dudiobj = principalComp())$CTRIND
+      } else {
+        return()
+      }
+    })
+    
+    # download plots
+    output$downloadpca <- downloadHandler(
+      filename = "pcaplot.svg",
+      content = function(file) {
+        svg(file, width = input$widthpca / 2.54, height = input$heightpca / 2.54, pointsize = 8)
+        req(input$factovar)
+        print(grid.arrange(DecompInertia(dudiobj = principalComp()),
+                           CorCircle(dudiobj = principalComp(), xaxis = as.integer(input$xaxis), yaxis = as.integer(input$yaxis)),
+                           PlotIndiv(dudiobj = principalComp(), xaxis = as.integer(input$xaxis), yaxis = as.integer(input$yaxis), printlabel = input$labelindiv),
+                           nrow = 3))
+        dev.off()
+      })
+    
+    
+    # MULTIVARIE : CLASSIFICATION ----
+    
+    # Compute hierarchical clustering
+    
+    clusterComp <- eventReactive(input$buttoncah, {
+      ComputeClassif(df = baseData$df, varquanti = input$cahvar, stand = input$cahstandardize, method = input$cahmethod)
+    })
+    
+    # Plot dendrogram
+    
+    output$cahdendro <- renderPlot({
+      req(clusterComp)
+      withProgress(min = 0, message = "Calcul en cours", expr = {
+        PlotDendro(classifobj = clusterComp())})
+    })
+    
+    # Plot heigth
+    
+    output$cahheight <- renderPlot({
+      req(clusterComp)
+      PlotHeight(classifobj = clusterComp())
+    })
+    
+    # Plot profile
+    
+    output$cahprofile <- renderPlot({
+      req(clusterComp)
+      PlotProfile(classifobj = clusterComp(), nbclus = input$cahnclass)$PROFILE
+    })
+    
+    
+    # download plots
+    output$downloadclus <- downloadHandler(
+      filename = "clusplot.svg",
+      content = function(file) {
+        svg(file, width = input$widthclus / 2.54, height = input$heightclus / 2.54, pointsize = 8)
+        req(clusterComp)
+        print(grid.arrange(PlotDendro(classifobj = clusterComp()),
+                           PlotHeight(classifobj = clusterComp()),
+                           PlotProfile(classifobj = clusterComp(), nbclus = input$cahnclass)$PROFILE,
+                           nrow = 3))
+        dev.off()
+      })
+    
+    
     
     
     

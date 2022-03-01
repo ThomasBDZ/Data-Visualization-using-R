@@ -199,10 +199,6 @@ shinyUI(navbarPage(title = "My title",
                                                                      selected = "", 
                                                                      multiple = FALSE, 
                                                                      selectize = TRUE),
-                                                         checkboxInput("reg1save", "Enregistrer les résidus"),
-                                                         conditionalPanel(condition = "input.reg1save == true",
-                                                                          textInput(inputId = "reg1prefix", label = "Préfixe", value = ""),
-                                                                          actionButton(inputId = "addreg1resid", label = "Ajouter les résidus")),
                                                          tags$br(),
                                                          tags$h4("Récupérer le graphique"),
                                                          numericInput(inputId = "widthreg1", label = "Width (cm)", value = 20, min = 1, max = 30),
@@ -235,10 +231,6 @@ shinyUI(navbarPage(title = "My title",
                                                                      multiple = FALSE, 
                                                                      selectize = TRUE),
                                                          checkboxInput(inputId = "bpjitter", label = "Surimposer les points", value = FALSE),
-                                                         checkboxInput("aov1save", "Enregistrer les résidus"),
-                                                         conditionalPanel(condition = "input.aov1save == true",
-                                                                          textInput(inputId = "aov1prefix", label = "Préfixe", value = ""),
-                                                                          actionButton(inputId = "addaov1resid", label = "Ajouter les résidus")),
                                                          tags$br(),
                                                          tags$h4("Récupérer le graphique"),
                                                          numericInput(inputId = "widthanova1", label = "Width (cm)", value = 20, min = 1, max = 30),
@@ -261,14 +253,140 @@ shinyUI(navbarPage(title = "My title",
                                           )
                                  )
                         ),
+                        
+                        # Multivarié ----
+                        
                         tabPanel("Analyse multi-variable",
-                                 DT::dataTableOutput("table")
-                        )
-             ), 
-             tabPanel("Cartographie",
-                      verbatimTextOutput("summary")
+                                 tabsetPanel(
+                                   tabPanel("RÉGRESSION",
+                                            fluidRow(
+                                              column(3, wellPanel(
+                                                tags$h4("Choisir les variables"),
+                                                selectInput(inputId = "regmultdep", 
+                                                            label = "Choisir une variable à expliquer (quanti)", 
+                                                            choices = "", 
+                                                            selected = "", 
+                                                            multiple = FALSE, 
+                                                            selectize = TRUE),
+                                                selectInput(inputId = "regmultindep", 
+                                                            label = "Choisir plusieurs variables explicatives (quanti)", 
+                                                            choices = "", 
+                                                            selected = "", 
+                                                            multiple = TRUE, 
+                                                            selectize = TRUE),
+                        
+                                              )),
+                                              column(5,
+                                                     tags$h4("Matrice de corrélation"),
+                                                     div(tableOutput("matcor"), style = "overflow-x: auto;")
+                                              ),
+                                              column(4, 
+                                                     tags$h4("Résumé numérique du modèle"),
+                                                     div(tableOutput("coefregmult"), style = "overflow-x: auto;")
+                                              )
+                                            )
+                                   ),
+                                   
+                                   tabPanel("ANALYSE FACTORIELLE",
+                                            fluidRow(
+                                              column(3, wellPanel(
+                                                tags$h4("Choisir les variables"),
+                                                selectInput(inputId = "factovar", 
+                                                            label = "Choisir plusieurs variables quantitatives", 
+                                                            choices = "", 
+                                                            selected = "", 
+                                                            multiple = TRUE, 
+                                                            selectize = TRUE),
+                                                actionButton("buttonpca", "Calculer l'ACP"),
+                                                selectInput("xaxis", label = "Axe des abscisses (x)", choices = 1:4, selected = 1, multiple = FALSE, selectize = TRUE),
+                                                selectInput("yaxis", label = "Axe des ordonnées (y)", choices = 1:4, selected = 2, multiple = FALSE, selectize = TRUE))
+                                              ),
+                                              column(9,
+                                                     tags$h4("Matrice de corrélation"),
+                                                     div(tableOutput("facmatcor"), style = "overflow-x: auto;"))
+                                            ),
+                                            fluidRow(
+                                              column(3, wellPanel(
+                                                tags$h4("Récupérer le graphique"),
+                                                numericInput(inputId = "widthpca", label = "Width (cm)", value = 20, min = 1, max = 30),
+                                                numericInput(inputId = "heightpca", label = "Height (cm)", value = 25, min = 1, max = 30),
+                                                downloadButton("downloadpca", "Télécharger"))),
+                                              column(4,
+                                                     tags$h4("Cercle des corrélations"),
+                                                     plotOutput("corcircle")),
+                                              column(5,
+                                                     tags$h4("Décomposition de l'inertie"),
+                                                     plotOutput("compinert")
+                                              )
+                                            ),
+                                            fluidRow(
+                                              column(3, wellPanel(checkboxInput("labelindiv", "Etiqueter les individus", value = FALSE),
+                                                                  checkboxInput("facsave", "Enregistrer les coordonnées"),
+                                                                  conditionalPanel(condition = "input.facsave == true",
+                                                                                   textInput(inputId = "facprefix", label = "Préfixe", value = ""),
+                                                                                   actionButton(inputId = "addfaccoord", label = "Ajouter les coordonnées factorielles"))
+                                              )),
+                                              column(9,
+                                                     tags$h4("Coordonnées des individus"),
+                                                     plotOutput("indivpca"))
+                                            ),
+                                            fluidRow(
+                                              column(3, wellPanel()),
+                                              column(4,
+                                                     tags$h4("Contribution des variables (somme = 1000)"),
+                                                     tableOutput("contribvar")),
+                                              column(5,
+                                                     tags$h4("Contribution des individus (somme = 1000)"),
+                                                     dataTableOutput("contribind")
+                                              )
+                                            )
+                                   ),
+                                   tabPanel("CLASSIFICATION",
+                                            fluidRow(
+                                              column(3, wellPanel(
+                                                tags$h4("Choisir les variables"),
+                                                selectInput(inputId = "cahvar", 
+                                                            label = "Choisir plusieurs variables quantitatives", 
+                                                            choices = "", 
+                                                            selected = "", 
+                                                            multiple = TRUE, 
+                                                            selectize = TRUE),
+                                                checkboxInput("cahstandardize", label = "Standardiser les variables", value = FALSE),
+                                                selectInput("cahmethod", label = "Choisir un critère d'aggrégation", choices = c("Minimum" = "single",
+                                                                                                                                 "Maximum" = "complete",
+                                                                                                                                 "Moyenne" = "average",
+                                                                                                                                 "Ward" = "ward"), 
+                                                            selected = "average", multiple = FALSE, selectize = TRUE),
+                                                actionButton(inputId = "buttoncah", label = "Calculer la CAH"),
+                                                tags$hr(),
+                                                sliderInput("cahnclass", label = "Choisir le nombre de classes", min = 2, max = 12, step = 1, value = 4),
+                                                checkboxInput("cahsave", "Enregistrer les classes"),
+                                                conditionalPanel(condition = "input.cahsave == true",
+                                                                 textInput(inputId = "cahprefix", label = "Préfixe", value = ""),
+                                                                 actionButton(inputId = "addcahclass", label = "Ajouter les classes"))
+                                              )),
+                                              column(5,
+                                                     tags$h4("Dendrogramme"),
+                                                     plotOutput("cahdendro")),
+                                              column(4, 
+                                                     tags$h4("Niveaux"),
+                                                     plotOutput("cahheight"))),
+                                            fluidRow(
+                                              column(3, wellPanel(
+                                                tags$h4("Récupérer le graphique"),
+                                                numericInput(inputId = "widthclus", label = "Width (cm)", value = 20, min = 1, max = 30),
+                                                numericInput(inputId = "heightclus", label = "Height (cm)", value = 30, min = 1, max = 30),
+                                                downloadButton("downloadclus", "Télécharger")
+                                              )),
+                                              column(9, 
+                                                     tags$h4("Profil des observations"),
+                                                     plotOutput("cahprofile")))
+                                   )
+                                 )
+                        ),
              ),
              inverse = T
-  ))
+  )
+  )
   
   
