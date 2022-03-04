@@ -1,9 +1,11 @@
 
 library(markdown)
 library(ggplot2)
+library(shinythemes)
 
-
-shinyUI(navbarPage(title = "Outil d'analyse de donnees",
+shinyUI(navbarPage(
+            theme = shinytheme("united"),
+            title = "Outil d'analyse de donnees",
              tabPanel("Guide",
                       fluidRow(
                         column(10, includeMarkdown("Guide.md")))
