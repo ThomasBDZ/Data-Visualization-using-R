@@ -3,7 +3,7 @@ library(markdown)
 library(ggplot2)
 
 
-shinyUI(navbarPage(title = "My title",
+shinyUI(navbarPage(title = "Outil d'analyse de donnees",
              tabPanel("Guide",
                       fluidRow(
                         column(10, includeMarkdown("Guide.md")))
@@ -12,10 +12,6 @@ shinyUI(navbarPage(title = "My title",
                 fluidRow(
                   column(3, wellPanel(
                     fluidRow(
-                      tags$h4("Charger les données d'exemple"),
-                      actionButton(inputId = "loadExData", label = "Chargement"),
-                      htmlOutput("description"),
-                      tags$hr(),
                       tags$h4("Charger ses propres données"),
                       checkboxInput(inputId = "showsettings", value = FALSE, label = "Options de chargement"),
                       conditionalPanel(
@@ -40,15 +36,6 @@ shinyUI(navbarPage(title = "My title",
                                        '"')),
                         fileInput("fileInput", "Charger le tableau", accept = "text/csv", multiple = FALSE),
                         selectInput("idtab",
-                                    "Variable identifiant", 
-                                    choices = "",
-                                    selected = "", 
-                                    multiple = FALSE,
-                                    selectize = TRUE, width = "50%"),
-                        tags$hr(),
-                        # Charger le shape
-                        fileInput("shapeInput", "Charger le fond de carte", accept = c("application/zip", "application/x-gzip", ".zip")),
-                        selectInput("idshape",
                                     "Variable identifiant", 
                                     choices = "",
                                     selected = "", 
@@ -278,61 +265,7 @@ shinyUI(navbarPage(title = "My title",
                                               )
                                             )
                                    ),
-                                   
-                                   tabPanel("ANALYSE FACTORIELLE",
-                                            fluidRow(
-                                              column(3, wellPanel(
-                                                tags$h4("Choisir les variables"),
-                                                selectInput(inputId = "factovar", 
-                                                            label = "Choisir plusieurs variables quantitatives", 
-                                                            choices = "", 
-                                                            selected = "", 
-                                                            multiple = TRUE, 
-                                                            selectize = TRUE),
-                                                actionButton("buttonpca", "Calculer l'ACP"),
-                                                selectInput("xaxis", label = "Axe des abscisses (x)", choices = 1:4, selected = 1, multiple = FALSE, selectize = TRUE),
-                                                selectInput("yaxis", label = "Axe des ordonnées (y)", choices = 1:4, selected = 2, multiple = FALSE, selectize = TRUE))
-                                              ),
-                                              column(9,
-                                                     tags$h4("Matrice de corrélation"),
-                                                     div(tableOutput("facmatcor"), style = "overflow-x: auto;"))
-                                            ),
-                                            fluidRow(
-                                              column(3, wellPanel(
-                                                tags$h4("Récupérer le graphique"),
-                                                numericInput(inputId = "widthpca", label = "Width (cm)", value = 20, min = 1, max = 30),
-                                                numericInput(inputId = "heightpca", label = "Height (cm)", value = 25, min = 1, max = 30),
-                                                downloadButton("downloadpca", "Télécharger"))),
-                                              column(4,
-                                                     tags$h4("Cercle des corrélations"),
-                                                     plotOutput("corcircle")),
-                                              column(5,
-                                                     tags$h4("Décomposition de l'inertie"),
-                                                     plotOutput("compinert")
-                                              )
-                                            ),
-                                            fluidRow(
-                                              column(3, wellPanel(checkboxInput("labelindiv", "Etiqueter les individus", value = FALSE),
-                                                                  checkboxInput("facsave", "Enregistrer les coordonnées"),
-                                                                  conditionalPanel(condition = "input.facsave == true",
-                                                                                   textInput(inputId = "facprefix", label = "Préfixe", value = ""),
-                                                                                   actionButton(inputId = "addfaccoord", label = "Ajouter les coordonnées factorielles"))
-                                              )),
-                                              column(9,
-                                                     tags$h4("Coordonnées des individus"),
-                                                     plotOutput("indivpca"))
-                                            ),
-                                            fluidRow(
-                                              column(3, wellPanel()),
-                                              column(4,
-                                                     tags$h4("Contribution des variables (somme = 1000)"),
-                                                     tableOutput("contribvar")),
-                                              column(5,
-                                                     tags$h4("Contribution des individus (somme = 1000)"),
-                                                     dataTableOutput("contribind")
-                                              )
-                                            )
-                                   ),
+                                
                                    tabPanel("CLASSIFICATION",
                                             fluidRow(
                                               column(3, wellPanel(

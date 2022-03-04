@@ -14,12 +14,12 @@ shinyServer(
   
   function(input, output, session) {
     
+    # DONNEES ----
+    
     df_fire <- read.csv("data/forestfires.csv")
     
     baseData <- reactiveValues(df = df_fire)
-    
-    # DONNEES ----
-    
+
     # Charger les données
     
     observe({
@@ -53,37 +53,45 @@ shinyServer(
     
     observe({
       columnList <- c("", colnames(baseData$df))
+      quantitative <- c("", colnames(Filter(is.numeric, baseData$df)))
+      qualitative <-  c("", colnames(baseData$df[,!(names(baseData$df) %in% colnames(Filter(is.numeric, baseData$df)))]))
       
       updateSelectInput(session = session,
                         inputId = "idtab",
                         choices = columnList)
       updateSelectInput(session = session,
-                        inputId = "idshape",
-                        choices = columnList)
-      updateSelectInput(session = session,
                         inputId = "uniquanti",
-                        choices = columnList)
+                        choices = quantitative)
       updateSelectInput(session = session,
                         inputId = "uniquali",
-                        choices = columnList)
+                        choices = qualitative)
       updateSelectInput(session = session,
                         inputId = "qualidep",
-                        choices = columnList)
+                        choices = qualitative)
       updateSelectInput(session = session,
                         inputId = "qualiindep",
-                        choices = columnList)
+                        choices = qualitative)
       updateSelectInput(session = session,
                         inputId = "quantidep",
-                        choices = columnList)
+                        choices = quantitative)
       updateSelectInput(session = session,
                         inputId = "quantiindep",
-                        choices = columnList)
+                        choices = quantitative)
       updateSelectInput(session = session,
                         inputId = "quanlidep",
-                        choices = columnList)
+                        choices = quantitative)
       updateSelectInput(session = session,
                         inputId = "quanliindep",
-                        choices = columnList)
+                        choices = qualitative)
+      updateSelectInput(session = session,
+                        inputId = "regmultdep",
+                        choices = quantitative)
+      updateSelectInput(session = session,
+                        inputId = "regmultindep",
+                        choices = quantitative)
+      updateSelectInput(session = session,
+                        inputId = "cahvar",
+                        choices = quantitative)
             
     })
     
@@ -346,88 +354,7 @@ shinyServer(
         return()
       }
     })
-    
-    
-    # MULTIVARIE : ANALYSE FACTORIELLE ----
-    
-    # Compute factorial analysis
-    
-    
-    principalComp <- eventReactive(input$buttonpca, {
-      if(colnames(baseData$df)[1] == "BUREAU"){
-        ComputePrincipalComp(df = baseData$df, varquanti = input$factovar, ident = "BUREAU")
-      } else {
-        if(input$idtab == ""){
-          stop("Sélectionner une variable identifiant (onglet Données)")
-        } else {
-          ComputePrincipalComp(df = baseData$df, varquanti = input$factovar, ident = input$idtab)
-        }
-      }
-    })
-    
-    
-    
-    # Correlation matrix
-    
-    output$facmatcor <- renderTable({
-      req(principalComp)
-      CorCompMat(dudiobj = principalComp(), xaxis = input$xaxis, yaxis = input$yaxis)
-    })
-    
-    
-    # Plot components
-    
-    output$compinert <- renderPlot({
-      req(input$factovar)
-      DecompInertia(dudiobj = principalComp())
-    })
-    
-    # Plot individuals
-    
-    output$indivpca <- renderPlot({
-      req(input$factovar)
-      PlotIndiv(dudiobj = principalComp(), xaxis = as.integer(input$xaxis), yaxis = as.integer(input$yaxis), printlabel = input$labelindiv)
-    })
-    
-    # Plot circle of correlations
-    
-    output$corcircle <- renderPlot({
-      req(input$factovar)
-      CorCircle(dudiobj = principalComp(), xaxis = as.integer(input$xaxis), yaxis = as.integer(input$yaxis))
-    })
-    
-    # Table of contributions (variables and observations)
-    
-    output$contribvar <- renderTable(digits = 0, expr = {
-      if (!is.null(input$factovar)){
-        ContribVarIndiv(dudiobj = principalComp())$CTRVAR
-      } else {
-        return()
-      }
-    })
-    
-    output$contribind <- renderDataTable(options = list(pageLength = 10), expr = {
-      if (!is.null(input$factovar)){
-        ContribVarIndiv(dudiobj = principalComp())$CTRIND
-      } else {
-        return()
-      }
-    })
-    
-    # download plots
-    output$downloadpca <- downloadHandler(
-      filename = "pcaplot.svg",
-      content = function(file) {
-        svg(file, width = input$widthpca / 2.54, height = input$heightpca / 2.54, pointsize = 8)
-        req(input$factovar)
-        print(grid.arrange(DecompInertia(dudiobj = principalComp()),
-                           CorCircle(dudiobj = principalComp(), xaxis = as.integer(input$xaxis), yaxis = as.integer(input$yaxis)),
-                           PlotIndiv(dudiobj = principalComp(), xaxis = as.integer(input$xaxis), yaxis = as.integer(input$yaxis), printlabel = input$labelindiv),
-                           nrow = 3))
-        dev.off()
-      })
-    
-    
+
     # MULTIVARIE : CLASSIFICATION ----
     
     # Compute hierarchical clustering
